@@ -23,7 +23,7 @@ class octreeNode : std::enable_shared_from_this<octreeNode>
 private:
 	
 	int root;
-    uint8_t children[8];
+    int children[8];
 	int parent;
 	vec3 center;
 	float halfSize;
@@ -75,10 +75,9 @@ private:
 			//============
 			octreeNode child(ID, level+1, childCenter, halfSize*0.5);
 			child.code = i;
-			table.push_back(child);
-			//============
+            //============
 			//children[i] = new octreeNode(ID, level+1, childCenter, halfSize*0.5);
-            children[i] = i;
+            children[i] = child.ID;
 		}
 
 		isLeaf = false;
@@ -140,7 +139,7 @@ public:
 	int ID;
 	bool isLeaf = true;
 	bool isDataSet = false;
-    uint8_t code;
+    uint8_t code = INT8_MIN;
 	octreeNode()
 	{
 		ID = numNodes;
