@@ -24,7 +24,7 @@ class octreeNode : std::enable_shared_from_this<octreeNode>
 {
 private:
 	int root;
-    int children[8]={-1,-1,-1,-1,-1,-1,-1,-1};
+    vector<int> children={-1,-1,-1,-1,-1,-1,-1,-1};
 	int parent;
 	vec3 center;
 	float halfSize;
@@ -33,60 +33,6 @@ private:
 	int level = 0;
 	int maxLevel = 10;
     float minCellWidth = 0.0001;
-
-/*
-	bool split()
-	{
-		float childWidth = 0.5*halfSize;
-
-		if(childWidth < minCellWidth)
-		{
-			cout<<"Point could not be added, grid cell size is too small. skipping.\n";
-			return false;
-		}
-	
-        for(int i = 0;i<=7;++i)
-		{
-			vec3 childCenter;
-            //uint8_t tempCode = i;
-			switch(i)
-			{
-				case 0: childCenter = center + vec3(-childWidth, -childWidth, -childWidth);
-						break;
-
-				case 1: childCenter = center + vec3(-childWidth, -childWidth, childWidth);
-						break;
-
-				case 2: childCenter = center + vec3(-childWidth, childWidth, -childWidth);
-						break;
-
-				case 3: childCenter = center + vec3(-childWidth, childWidth, childWidth);
-						break;
-
-				case 4: childCenter = center + vec3(childWidth, -childWidth, -childWidth);
-						break;
-
-				case 5: childCenter = center + vec3(childWidth, -childWidth, childWidth);
-						break;
-
-				case 6: childCenter = center + vec3(childWidth, childWidth, -childWidth);
-						break;
-
-				case 7: childCenter = center + vec3(childWidth, childWidth, childWidth);
-						break;
-			}
-			//============
-            octreeNode child(ID, level+1, childCenter, halfSize*0.5,i);
-            childNodeIDs[i] = child.ID;
-//			child.code = i;
-            //============
-			//children[i] = new octreeNode(ID, level+1, childCenter, halfSize*0.5);
-            //children[i] = child.ID;
-		}
-
-        return true;
-    };
-*/
 
 	vec3 getChildCenter(vec3 cen, int cod, float childWidth)
 	{
@@ -139,10 +85,7 @@ public:
 
     const vector<int> getChildren()
     {
-        vector<int> a = {children[0],children[1],children[2],
-                    children[3],children[4],children[5],
-                    children[6],children[7]};
-//        int (&c)[8] = children;
+        vector<int> a = children;
         return a;
     };
 
@@ -152,8 +95,6 @@ public:
 		numNodes++;
 		root = ID;
 		parent = 0;
-        //center = vec3(0,0,0);
-		//halfSize = 2.0;
         table.push_back(self());
 	};
 
@@ -170,11 +111,6 @@ public:
         table.push_back(self());
 	};
 
-//	void insert(vec3 point)
-//	{
-//		insert(ID, point);
-//	};
-
 	void setData(vec3 p)
 	{
 		data = p;
@@ -183,11 +119,12 @@ public:
 
     void insert(vec3 point)
     {
-    	if(isLeaf)
+        octreeNode& self = table[this->ID];
+        if(isLeaf)
         {
     		if(isDataSet)
     		{
-    			//create 2 child nodes and insert oldData and point
+                //create 2 child nodes and insert oldData and point
 
                 //--------------------------------
     			vec3 oldData = data;
@@ -219,54 +156,11 @@ public:
     	else
     	{
     		//means we have children where data needs to be placed
-    		int index = getOctantContainingPoint(point);
+            int index = getOctantContainingPoint(point);
             int childID = table[this->ID].children[index];
             octreeNode& child = table[childID];
     		child.insert(point);
     	}
-
-        /*if(!isDataSet)
-        {
-            if(isLeaf)
-            {
-                setData(point);
-            }
-            else
-            {
-                int child_number = getOctantContainingPoint(point);
-                octreeNode& child = table[children[child_number]];
-                child.insert(point);
-            }
-        }
-        else
-        {
-            //find octants where old and new data will go
-            //insert those points respectively
-            float childWidth = 0.5*halfSize;
-            vec3 oldData = data;
-
-            if(childWidth < minCellWidth)
-            {
-                cout<<"Point could not be added, grid cell size is too small. skipping.\n";
-                return;
-            }
-
-            int child1_number = getOctantContainingPoint(oldData);
-            int child2_number = getOctantContainingPoint(point);
-            vec3 child1_center = getChildCenter(center, child1_number, childWidth);
-            vec3 child2_center = getChildCenter(center, child2_number, childWidth);
-            octreeNode child1(ID, level+1, child1_center, halfSize*0.5,child2_number);
-            child1.insert(oldData);
-            table[this->ID].children[child1_number] = child1.ID;
-
-            octreeNode child2(ID, level+1, child2_center, halfSize*0.5,child2_number);
-            child2.insert(point);
-            table[this->ID].children[child2_number] = child2.ID;
-
-            isDataSet = false;
-            isLeaf = false;
-        }
-        */
     };
 };
 
