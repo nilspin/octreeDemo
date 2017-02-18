@@ -22,13 +22,20 @@ int main()
 //    	cout<<i<<") "<<p.x<<" "<<p.y<<" "<<p.z<<"\n";
 //    }
 
-	octreeNode rootNode(0,0, vec3(0,0,0), 2.0);
+    //Take any code value for now.
+    octreeNode rootNode(0,0, vec3(0,0,0), 2.0, 0);
 //	for(auto i=0;i<pointList.size();++i)
 //	{
 //		rootNode.insert(pointList[i]);
 //	}
-    rootNode.insert(vec3(0.4,0.12,-1.3));
-    rootNode.insert(vec3(-0.4,0.12,-1.3));
+    rootNode.insert(vec3(1,1,1));
+    rootNode.insert(vec3(1,1,-1));
+//    rootNode.insert(vec3(1,-1,1));
+//    rootNode.insert(vec3(1,-1,-1));
+//    rootNode.insert(vec3(-1,1,1));
+//    rootNode.insert(vec3(-1,1,-1));
+//    rootNode.insert(vec3(-1,-1,1));
+    rootNode.insert(vec3(-1,-1,-1));
     cout<<"====================================\n";
     for(auto &i : table)
     {

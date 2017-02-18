@@ -6,6 +6,7 @@
 #include <iostream>
 #include <cstdint>
 #include <bitset>
+#include <algorithm>
 #include <glm/glm.hpp>
 
 using namespace glm;
@@ -17,13 +18,15 @@ class octreeNode;
 
 static std::vector<octreeNode> table;
 
+vector<int> childNodeIDs(8);
+
 float minCellWidth = 0.0001;
 class octreeNode : std::enable_shared_from_this<octreeNode>
 {
 private:
 	
 	int root;
-    int children[8];
+    int children[8]={-1,-1,-1,-1,-1,-1,-1,-1};
 	int parent;
 	vec3 center;
 	float halfSize;
@@ -42,10 +45,10 @@ private:
 			return false;
 		}
 	
-        for(uint8_t i = 0;i<=7;++i)
+        for(int i = 0;i<=7;++i)
 		{
 			vec3 childCenter;
-            uint8_t tempCode = i;
+            //uint8_t tempCode = i;
 			switch(i)
 			{
 				case 0: childCenter = center + vec3(-childWidth, -childWidth, -childWidth);
@@ -73,16 +76,17 @@ private:
 						break;
 			}
 			//============
-			octreeNode child(ID, level+1, childCenter, halfSize*0.5);
-			child.code = i;
+            octreeNode child(ID, level+1, childCenter, halfSize*0.5,i);
+            childNodeIDs[i] = child.ID;
+//			child.code = i;
             //============
 			//children[i] = new octreeNode(ID, level+1, childCenter, halfSize*0.5);
-            children[i] = child.ID;
+            //children[i] = child.ID;
 		}
 
 		isLeaf = false;
 		return true;
-	};
+    };
 
 	void insert(int ptr,vec3 point)
 	{
@@ -96,41 +100,49 @@ private:
 		else
 		{
 			//if leaf node
-			if(!node.isDataSet)
+            if(!isDataSet)
 			{
-				node.setData(point);
+                int child_number = getOctantContainingPoint(point);
+                int childID = childNodeIDs[child_number];
+                octreeNode& childNode = table[childID];
+                childNode.setData(point);
+                table[childNode.parent].children[child_number] = childID;
+                setData(point);
 			}
 			else
 			{
-				//if leaf already contains data then split this node and
-				//add insert recursively
+                // If leaf already contains data then split this node and
+                // insert recursively
 				vec3 oldData = data;
-				node.isDataSet = false;
-				if(!node.split()) return;
-				//ptr to node where oldData is to be inserted
-				int child1 = node.children[getOctantContainingPoint(oldData)];
-				octreeNode& childNode1 = table[child1];
-				//ptr to node where new point is to be inserted
-				int child2 = node.children[getOctantContainingPoint(point)];
-				octreeNode& childNode2 = table[child2];
-				
-				std::cout<<"Restoring ("<<oldData.x<<" "<<oldData.y<<" "<<oldData.z<<") to node "<<std::bitset<4>(childNode1.code)<<"\n";
-				childNode1.insert(child1, oldData);
-				
-				std::cout<<"Adding ("<<point.x<<" "<<point.y<<" "<<point.z<<") to node "<<std::bitset<4>(childNode2.code)<<"\n";
-				childNode2.insert(child2, point);
+				isDataSet = false;
 
-			}
+                //childNodeIDs.erase(childNodeIDs.begin(), childNodeIDs.end());
+                if(!split()) return;
+
+                //ptr to node where oldData is to be inserted
+                int child1_number = getOctantContainingPoint(oldData);
+                int child1 = childNodeIDs[child1_number];
+                octreeNode& child1Node = table[child1];
+                child1Node.setData(oldData);
+                table[child1Node.parent].children[child1_number] = child1;
+
+                //ptr to node where new point is to be inserted
+                int child2_number = getOctantContainingPoint(point);
+                int child2 = childNodeIDs[child2_number];
+                octreeNode& child2Node = table[child2];
+                child2Node.setData(point);
+                table[child2Node.parent].children[child2_number] = child2;
+            }
 		}
 	};
 
-    uint8_t getOctantContainingPoint(vec3 point)
+    int getOctantContainingPoint(vec3 point)
 	{
-        uint8_t code = 0;
-		if(point.x > center.x) code|=4;
-		if(point.y > center.y) code|=2;
-		if(point.z > center.z) code|=1;
-		return code;
+        int c = 0;
+        if(point.x > center.x) c|=4;
+        if(point.y > center.y) c|=2;
+        if(point.z > center.z) c|=1;
+        return c;
 	};
 
 	octreeNode& self(){return *this;};
@@ -139,7 +151,7 @@ public:
 	int ID;
 	bool isLeaf = true;
 	bool isDataSet = false;
-    uint8_t code = INT8_MIN;
+    int code = -1;
 	octreeNode()
 	{
 		ID = numNodes;
@@ -147,20 +159,23 @@ public:
 		root = ID;
 		parent = 0;
 		code = 0;
+        isDataSet = false;
 		//center = vec3(0,0,0);
 		//halfSize = 2.0;
 		table.push_back(self());
 	};
 
-	octreeNode(int p, int l, vec3 c, float hs)
+    octreeNode(int p, int l, vec3 c, float hs, int cod)
 	{
 		parent = p;
 		center = c;
 		halfSize = hs;
 		level = l;
+        code = cod;
 		isLeaf = true;
 		ID = numNodes;
 		numNodes++;
+        isDataSet = false;
 		table.push_back(self());
 	};
 
