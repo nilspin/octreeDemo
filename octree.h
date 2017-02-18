@@ -96,6 +96,7 @@ private:
 			int child = node.children[getOctantContainingPoint(point)];
 			octreeNode& childNode = table[child];
 			childNode.insert(child, point);
+            isLeaf = false;
 		}
 		else
 		{
@@ -108,6 +109,7 @@ private:
                 childNode.setData(point);
                 table[childNode.parent].children[child_number] = childID;
                 setData(point);
+                //isLeaf = false;
 			}
 			else
 			{
@@ -158,12 +160,20 @@ public:
 		numNodes++;
 		root = ID;
 		parent = 0;
-		code = 0;
         isDataSet = false;
 		//center = vec3(0,0,0);
 		//halfSize = 2.0;
 		table.push_back(self());
 	};
+
+    const int getChildren()
+    {
+        int a[8] = {children[0],children[1],children[2],
+                    children[3],children[4],children[5],
+                    children[6],children[7]};
+//        int (&c)[8] = children;
+        return *a;
+    };
 
     octreeNode(int p, int l, vec3 c, float hs, int cod)
 	{
