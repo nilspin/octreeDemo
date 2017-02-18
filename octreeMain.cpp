@@ -31,21 +31,21 @@ int main()
     rootNode.insert(vec3(1,1,1));
     rootNode.insert(vec3(1,1,-1));
     rootNode.insert(vec3(1,-1,1));
-//    rootNode.insert(vec3(1,-1,-1));
-//    rootNode.insert(vec3(-1,1,1));
+    rootNode.insert(vec3(1,-1,-1));
+    rootNode.insert(vec3(-1,1,1));
 //    rootNode.insert(vec3(-1,1,-1));
 //    rootNode.insert(vec3(-1,-1,1));
-    rootNode.insert(vec3(-1,-1,-1));
+//    rootNode.insert(vec3(-1,-1,-1));
     cout<<"====================================\n";
     for(auto &i : table)
     {
-        cout<<"ID: "<<i.ID<<", numNodes"<<numNodes<<"\n";
-//        const int &a = i.getChildren();
-//        for(int j=0;j<8;++j)
-//        {
-//            cout<<" "<<a[i];
-//        }
-//        cout<<"\n";
+        cout<<"ID: "<<i.ID<<" ";
+        auto t = i.getChildren();
+        for(auto &j:t)
+        {
+            cout<<" "<<j;
+        }
+        cout<<"\n";
     }
 	return 0;
 }

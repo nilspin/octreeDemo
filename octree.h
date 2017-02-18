@@ -20,11 +20,9 @@ static std::vector<octreeNode> table;
 
 vector<int> childNodeIDs(8);
 
-float minCellWidth = 0.0001;
 class octreeNode : std::enable_shared_from_this<octreeNode>
 {
 private:
-	
 	int root;
     int children[8]={-1,-1,-1,-1,-1,-1,-1,-1};
 	int parent;
@@ -34,7 +32,9 @@ private:
 	
 	int level = 0;
 	int maxLevel = 10;
+    float minCellWidth = 0.0001;
 
+/*
 	bool split()
 	{
 		float childWidth = 0.5*halfSize;
@@ -84,60 +84,42 @@ private:
             //children[i] = child.ID;
 		}
 
-		isLeaf = false;
-		return true;
+        return true;
     };
+*/
 
-	void insert(int ptr,vec3 point)
+	vec3 getChildCenter(vec3 cen, int cod, float childWidth)
 	{
-		octreeNode& node = table[ptr];
-		if(!node.isLeaf)
+		vec3 childCenter;
+        switch(cod)
 		{
-			int child = node.children[getOctantContainingPoint(point)];
-			octreeNode& childNode = table[child];
-			childNode.insert(child, point);
-            isLeaf = false;
+			case 0: childCenter = cen + vec3(-childWidth, -childWidth, -childWidth);
+					break;
+
+			case 1: childCenter = cen + vec3(-childWidth, -childWidth, childWidth);
+					break;
+
+			case 2: childCenter = cen + vec3(-childWidth, childWidth, -childWidth);
+					break;
+
+			case 3: childCenter = cen + vec3(-childWidth, childWidth, childWidth);
+					break;
+
+			case 4: childCenter = cen + vec3(childWidth, -childWidth, -childWidth);
+					break;
+
+			case 5: childCenter = cen + vec3(childWidth, -childWidth, childWidth);
+					break;
+
+			case 6: childCenter = cen + vec3(childWidth, childWidth, -childWidth);
+					break;
+
+			case 7: childCenter = cen + vec3(childWidth, childWidth, childWidth);
+					break;
 		}
-		else
-		{
-			//if leaf node
-            if(!isDataSet)
-			{
-                int child_number = getOctantContainingPoint(point);
-                int childID = childNodeIDs[child_number];
-                octreeNode& childNode = table[childID];
-                childNode.setData(point);
-                table[childNode.parent].children[child_number] = childID;
-                setData(point);
-                //isLeaf = false;
-			}
-			else
-			{
-                // If leaf already contains data then split this node and
-                // insert recursively
-				vec3 oldData = data;
-				isDataSet = false;
-
-                //childNodeIDs.erase(childNodeIDs.begin(), childNodeIDs.end());
-                if(!split()) return;
-
-                //ptr to node where oldData is to be inserted
-                int child1_number = getOctantContainingPoint(oldData);
-                int child1 = childNodeIDs[child1_number];
-                octreeNode& child1Node = table[child1];
-                child1Node.setData(oldData);
-                table[child1Node.parent].children[child1_number] = child1;
-
-                //ptr to node where new point is to be inserted
-                int child2_number = getOctantContainingPoint(point);
-                int child2 = childNodeIDs[child2_number];
-                octreeNode& child2Node = table[child2];
-                child2Node.setData(point);
-                table[child2Node.parent].children[child2_number] = child2;
-            }
-		}
+		return childCenter;
 	};
-
+	
     int getOctantContainingPoint(vec3 point)
 	{
         int c = 0;
@@ -154,26 +136,26 @@ public:
 	bool isLeaf = true;
 	bool isDataSet = false;
     int code = -1;
+
+    const vector<int> getChildren()
+    {
+        vector<int> a = {children[0],children[1],children[2],
+                    children[3],children[4],children[5],
+                    children[6],children[7]};
+//        int (&c)[8] = children;
+        return a;
+    };
+
 	octreeNode()
 	{
 		ID = numNodes;
 		numNodes++;
 		root = ID;
 		parent = 0;
-        isDataSet = false;
-		//center = vec3(0,0,0);
+        //center = vec3(0,0,0);
 		//halfSize = 2.0;
-		table.push_back(self());
+        table.push_back(self());
 	};
-
-    const int getChildren()
-    {
-        int a[8] = {children[0],children[1],children[2],
-                    children[3],children[4],children[5],
-                    children[6],children[7]};
-//        int (&c)[8] = children;
-        return *a;
-    };
 
     octreeNode(int p, int l, vec3 c, float hs, int cod)
 	{
@@ -182,23 +164,110 @@ public:
 		halfSize = hs;
 		level = l;
         code = cod;
-		isLeaf = true;
-		ID = numNodes;
+        ID = numNodes;
 		numNodes++;
         isDataSet = false;
-		table.push_back(self());
+        table.push_back(self());
 	};
 
-	void insert(vec3 point)
-	{
-		insert(ID, point);
-	};
+//	void insert(vec3 point)
+//	{
+//		insert(ID, point);
+//	};
 
 	void setData(vec3 p)
 	{
 		data = p;
 		isDataSet = true;
 	};
+
+    void insert(vec3 point)
+    {
+    	if(isLeaf)
+        {
+    		if(isDataSet)
+    		{
+    			//create 2 child nodes and insert oldData and point
+
+                //--------------------------------
+    			vec3 oldData = data;
+                float childWidth = this->halfSize*0.5;
+
+                //ptr to node where oldData is to be inserted
+                int child1_number = getOctantContainingPoint(oldData);
+                vec3 child1Center = getChildCenter(this->center, child1_number, childWidth);
+                octreeNode child1Node(this->ID,this->level+1,child1Center, childWidth, child1_number);
+                table[child1Node.ID].setData(oldData);
+                table[this->ID].children[child1_number] = child1Node.ID;
+
+                //ptr to node where new point is to be inserted
+                int child2_number = getOctantContainingPoint(point);
+                vec3 child2Center = getChildCenter(this->center, child2_number, childWidth);
+                octreeNode child2Node(this->ID,this->level+1,child2Center, childWidth, child2_number);
+                table[child2Node.ID].setData(point);
+                table[this->ID].children[child2_number] = child2Node.ID;
+                //--------------------------------
+
+
+                isLeaf = false;//since we have children now
+    		}
+            else
+            {
+                setData(point);
+            }
+    	}
+    	else
+    	{
+    		//means we have children where data needs to be placed
+    		int index = getOctantContainingPoint(point);
+            int childID = table[this->ID].children[index];
+            octreeNode& child = table[childID];
+    		child.insert(point);
+    	}
+
+        /*if(!isDataSet)
+        {
+            if(isLeaf)
+            {
+                setData(point);
+            }
+            else
+            {
+                int child_number = getOctantContainingPoint(point);
+                octreeNode& child = table[children[child_number]];
+                child.insert(point);
+            }
+        }
+        else
+        {
+            //find octants where old and new data will go
+            //insert those points respectively
+            float childWidth = 0.5*halfSize;
+            vec3 oldData = data;
+
+            if(childWidth < minCellWidth)
+            {
+                cout<<"Point could not be added, grid cell size is too small. skipping.\n";
+                return;
+            }
+
+            int child1_number = getOctantContainingPoint(oldData);
+            int child2_number = getOctantContainingPoint(point);
+            vec3 child1_center = getChildCenter(center, child1_number, childWidth);
+            vec3 child2_center = getChildCenter(center, child2_number, childWidth);
+            octreeNode child1(ID, level+1, child1_center, halfSize*0.5,child2_number);
+            child1.insert(oldData);
+            table[this->ID].children[child1_number] = child1.ID;
+
+            octreeNode child2(ID, level+1, child2_center, halfSize*0.5,child2_number);
+            child2.insert(point);
+            table[this->ID].children[child2_number] = child2.ID;
+
+            isDataSet = false;
+            isLeaf = false;
+        }
+        */
+    };
 };
 
 #endif
