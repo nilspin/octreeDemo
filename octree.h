@@ -119,7 +119,9 @@ public:
 
     void insert(vec3 point)
     {
+        float childWidth = this->halfSize*0.5;
         octreeNode& self = table[this->ID];
+
         if(isLeaf)
         {
     		if(isDataSet)
@@ -128,7 +130,6 @@ public:
 
                 //--------------------------------
     			vec3 oldData = data;
-                float childWidth = this->halfSize*0.5;
 
                 //ptr to node where oldData is to be inserted
                 int child1_number = getOctantContainingPoint(oldData);
@@ -157,10 +158,13 @@ public:
     	{
     		//means we have children where data needs to be placed
             int index = getOctantContainingPoint(point);
-            int childID = table[this->ID].children[index];
-            octreeNode& child = table[childID];
-    		child.insert(point);
-    	}
+            vec3 childCenter = getChildCenter(this->center, index, childWidth);
+            octreeNode child(this->ID, this->level+1, childCenter, childWidth, index);
+
+            table[child.ID].insert(point);
+            table[this->ID].children[index] = child.ID;
+
+        }
     };
 };
 
